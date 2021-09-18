@@ -47,9 +47,4 @@ class Player:
 # Initializes the number of players to register for the game instance passed as an argument
 # and returns the list of player objects. Also passes the game instance to the player.
 def init(game):
-    playerlist = []
-
-    for i in range(0, game.playercount):
-        playerlist.append(Player(game))
-
-    return playerlist
+    return [Player(game) for _ in range(game.playercount)]

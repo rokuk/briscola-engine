@@ -1,7 +1,11 @@
 import logging
 import itertools
 from random import *
-from com.rokuk.briscolaengine import cards, playerfactory
+import cards, playerfactory
+
+
+# Setup logging
+logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
 
 
 # Main game class
@@ -27,9 +31,6 @@ class Game:
         self.finished = False
         self.round = 0
         self.turn = 0
-
-        # Setup logging
-        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
 
     # Game setup method
     # Resets instance variables, generates card deck,
@@ -61,7 +62,7 @@ class Game:
 
         # Calls dealcards() 3 times to deal out first cards
         logging.debug("Dealing cards...")
-        for i in range(3):
+        for _ in range(3):
             self.dealcards()
 
         # Set trump and add the card to the end of the deck
@@ -92,7 +93,7 @@ class Game:
             logging.debug("Sending play event to players...")
             for playerid in itertools.chain(
                     range(self.turn, len(self.players)),
-                    range(0, self.turn)):
+                    range(self.turn)):
                 self.playcallback(self, self.players[playerid])
 
             # Get the winning card from played cards
@@ -109,8 +110,7 @@ class Game:
             logging.debug("Calculating round score...")
 
             # Add up all the scores
-            for cardid in range(0, len(self.playedcards)):
-                scoresum += self.playedcards[cardid].value
+            scoresum = sum(playedcard.value for playedcard in self.playedcards)
 
             logging.debug("Player %s won %s points.", roundwinner.id, scoresum)
 
@@ -146,21 +146,17 @@ class Game:
                 logging.debug("Dealing cards for round: " + str(self.round + 1))
                 self.dealcards()
 
-            logging.info("End of round %s", self.round)
+            logging.debug("End of round %s", self.round)
 
         logging.info("Game finished!")
 
         # Calculate game scores
         logging.debug("Calculating scores...")
 
-        for playerid in range(0, len(self.players)):
+        for playerid in range(len(self.players)):
             logging.debug("Player %s won %s", playerid, self.players[playerid].wonpoints)
 
-            playerscore = 0
-            playerscores = self.players[playerid].wonpoints
-
-            for score in playerscores:
-                playerscore += score
+            playerscore = sum(self.players[playerid].wonpoints)
 
             self.endscores.append(playerscore)
             logging.info("Player %s won %s points", playerid, playerscore)
@@ -198,9 +194,7 @@ class Game:
     def dealcards(self):
         count = 0
 
-        for playerid in itertools.chain(
-                range(self.turn, len(self.players)),
-                range(0, self.turn)):
+        for playerid in itertools.chain(range(self.turn, len(self.players)), range(self.turn)):
             player = self.players[playerid]
             card = self.deck.pop()
             player.addcard(card)
@@ -213,7 +207,7 @@ class Game:
 
 # Returns the winning card from all played cards and trump
 def getwincard(playedcards, trump):
-    logging.info("Checking for winning card...")
+    logging.debug("Checking for winning card...")
 
     # Create a foo card to compare the first checked card and later keep track of the best card.
     bestcard = playedcards[0]
@@ -252,20 +246,19 @@ def getwincard(playedcards, trump):
                 bestcard = card
                 logging.debug("Best card is not the same type as trump, therefore card is best card.")
 
-        # The trump was not played.
-        else:
-            # Check if card is the same type as the first card.
-            if card.type == playedcards[0].type:
-                logging.debug("Card is same type as first card.")
+        # The trump card was not played.
+        # Check if card is the same type as the first card.
+        elif card.type == playedcards[0].type:
+            logging.debug("Card is same type as first card.")
 
-                # Check if card strength is higher than first card's strength.
-                if card.strength > playedcards[0].strength:
-                    logging.debug("Card is higher than first card.")
+            # Check if card strength is higher than first card's strength.
+            if card.strength > playedcards[0].strength:
+                logging.debug("Card is higher than first card.")
 
-                    # Check if cards strength is higher than the bestcard's strength, if yes, set card as best.
-                    if card.strength > bestcard.strength:
-                        bestcard = card
-                        logging.debug("Card is same higher than bestcard.")
+                # Check if cards strength is higher than the bestcard's strength, if yes, set card as best.
+                if card.strength > bestcard.strength:
+                    bestcard = card
+                    logging.debug("Card is same higher than bestcard.")
 
     logging.debug("Winning card is: " + bestcard.type + str(bestcard.strength))
 
